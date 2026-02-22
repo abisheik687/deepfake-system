@@ -1,0 +1,84 @@
+# KAVACH-AI Dependencies
+# NO API KEYS REQUIRED - All open-source, local processing
+
+# Core Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+gunicorn>=21.2.0
+pydantic>=2.5.3
+pydantic-settings>=2.1.0
+python-multipart>=0.0.6
+
+# Database
+sqlalchemy>=2.0.25
+alembic>=1.13.1
+
+# Async & Background Tasks
+celery>=5.3.6
+redis>=5.0.1
+aiofiles>=23.2.1
+
+# Video Processing
+opencv-python>=4.9.0.80
+opencv-contrib-python>=4.9.0.80
+ffmpeg-python>=0.2.0
+yt-dlp>=2023.1.0
+
+# Audio Processing
+librosa>=0.10.1
+soundfile>=0.12.1
+pydub>=0.25.1
+
+# Face Detection & Landmarks
+mediapipe>=0.10.0
+
+# Deep Learning
+# Standard torch install (CPU/GPU auto-detect by pip usually pulls CPU, use --index-url for GPU if needed)
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+onnx>=1.15.0
+onnxruntime>=1.16.3
+
+# Image Processing
+Pillow>=10.2.0
+scikit-image>=0.22.0
+numpy>=1.26.0
+scipy>=1.11.0
+
+# Feature Extraction
+scikit-learn>=1.4.0
+
+# Model Serving
+transformers>=4.37.0
+timm>=0.9.0
+
+# WebSocket
+websockets>=12.0
+python-socketio>=5.11.0
+
+# HTTP Client
+httpx>=0.26.0
+requests>=2.31.0
+
+# Cryptography
+cryptography>=42.0.0
+hashlib-additional>=1.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+tqdm>=4.66.0
+loguru>=0.7.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+
+# CORS
+
+
+# Monitoring
+prometheus-client>=0.19.0
