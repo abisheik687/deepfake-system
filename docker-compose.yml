@@ -1,74 +1,149 @@
-version: '3.8'
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────
+# DeepShield AI — docker-compose.yml
+# Full-stack deepfake detection platform
+#
+# Profiles:
+#   default  → CPU mode (no GPU required)
+#   gpu      → CUDA GPU mode (requires nvidia-docker)
+#
+# Usage:
+#   CPU:  docker compose up
+#   GPU:  docker compose --profile gpu up
+# ─────────────────────────────────────────────────────────────────
 
 services:
-  # 1. Backend API
-  api:
+
+  # ── Backend API ────────────────────────────────────────────────
+  backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
-    container_name: kavach_api
+      dockerfile: Dockerfile
+      target: production
+    container_name: deepshield_backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-      - kavach_data:/app/data
     environment:
-      - DATABASE_URL=postgresql://kavach_user:secure_pass@db:5432/kavach_db
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./kavach.db
+      - HOST=0.0.0.0
+      - PORT=8000
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=super_secret_production_key_change_me
+      - LOG_LEVEL=INFO
+      - MODELS_DIR=/app/models
+    volumes:
+      - ./models:/app/models          # pretrained + fine-tuned weights
+      - ./data:/app/data              # datasets
+      - ./evidence:/app/evidence      # analysis evidence
+      - ./logs:/app/logs
+      - kavach_db:/app                # SQLite persistence
     depends_on:
-      - db
       - redis
-    command: gunicorn -c backend/gunicorn_conf.py backend.api.main:app
+    networks:
+      - deepshield_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # 2. Celery Worker (AI Processing)
-  worker:
+  # ── Backend (GPU variant) ─────────────────────────────────────
+  backend-gpu:
+    profiles: ["gpu"]
     build:
       context: .
-      dockerfile: backend/Dockerfile
-    container_name: kavach_worker
-    volumes:
-      - .:/app
-      - kavach_data:/app/data
+      dockerfile: Dockerfile
+      target: production
+    container_name: deepshield_backend_gpu
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://kavach_user:secure_pass@db:5432/kavach_db
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./kavach.db
       - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=INFO
+      - MODELS_DIR=/app/models
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./evidence:/app/evidence
+      - ./logs:/app/logs
+      - kavach_db:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     depends_on:
-      - db
       - redis
-    command: celery -A backend.worker.celery_app worker --loglevel=info
+    networks:
+      - deepshield_net
 
-  # 3. Frontend (React)
+  # ── Frontend ───────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    container_name: kavach_frontend
+      dockerfile: Dockerfile.frontend
+    container_name: deepshield_frontend
+    restart: unless-stopped
     ports:
-      - "3000:5173"
-    depends_on:
-      - api
-
-  # 4. Database (PostgreSQL)
-  db:
-    image: postgres:15-alpine
-    container_name: kavach_db
+      - "3000:3000"
     environment:
-      - POSTGRES_USER=kavach_user
-      - POSTGRES_PASSWORD=secure_pass
-      - POSTGRES_DB=kavach_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - deepshield_net
 
-  # 5. Redis (Queue)
+  # ── Redis (caching + job queue) ────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: kavach_redis
+    container_name: deepshield_redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    networks:
+      - deepshield_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Celery worker (async analysis jobs) ───────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: deepshield_worker
+    restart: unless-stopped
+    command: celery -A backend.worker worker --loglevel=info --concurrency=2
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MODELS_DIR=/app/models
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./evidence:/app/evidence
+    depends_on:
+      - redis
+    networks:
+      - deepshield_net
+
+networks:
+  deepshield_net:
+    driver: bridge
 
 volumes:
-  postgres_data:
-  kavach_data:
+  kavach_db:
+  redis_data:

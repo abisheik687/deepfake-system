@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Upload, Activity, FileText, Menu, X, Shield, Lock } from 'lucide-react';
+import { LayoutDashboard, Upload, Activity, FileText, Menu, X, Shield, Lock, Cpu, GraduationCap, Scan, Video, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SidebarItem = ({ icon: Icon, label, path, active }) => (
@@ -18,10 +18,12 @@ const MainLayout = () => {
     const location = useLocation();
 
     const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-        { icon: Upload, label: 'New Scan', path: '/upload' },
-        { icon: Activity, label: 'Live Monitor', path: '/monitor' },
-        { icon: FileText, label: 'Reports', path: '/reports' },
+        { icon: LayoutDashboard, label: 'Command Center', path: '/dashboard' },
+        { icon: Image, label: 'Image Scan', path: '/dashboard/scan/image' },
+        { icon: Video, label: 'Video Orchestration', path: '/dashboard/scan/video' },
+        { icon: Activity, label: 'Live Enforcement', path: '/dashboard/scan/live' },
+        { icon: FileText, label: 'Compliance Reports', path: '/dashboard/reports' },
+        { icon: Cpu, label: 'AI Model Registry', path: '/dashboard/models' },
     ];
 
     return (
@@ -38,8 +40,8 @@ const MainLayout = () => {
                         <div className="p-6 flex items-center gap-2 border-b border-white/10">
                             <Shield className="text-neon-blue" size={32} />
                             <div>
-                                <h1 className="text-xl font-bold tracking-wider">KAVACH<span className="text-neon-blue">.AI</span></h1>
-                                <p className="text-xs text-gray-500">Forensic Intelligence</p>
+                                <h1 className="text-xl font-bold tracking-wider">DEEP<span className="text-neon-blue">SHIELD</span></h1>
+                                <p className="text-xs text-gray-500">Threat Intelligence</p>
                             </div>
                         </div>
 

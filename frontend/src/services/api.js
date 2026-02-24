@@ -72,3 +72,34 @@ export const alertsAPI = {
         return response.data;
     }
 };
+
+export const unifiedAPI = {
+    /**
+     * Unified Deepfake Image Analysis
+     * @param {Object} payload - { data: string (base64 image), source: string }
+     */
+    analyzeImage: async (payload) => {
+        const response = await client.post('/api/scan/analyze-unified', payload);
+        return response.data;
+    },
+
+    /**
+     * Unified Deepfake Video Analysis
+     * @param {FormData} formData - form data containing video file
+     */
+    analyzeVideo: async (formData) => {
+        const response = await client.post('/api/scan/analyze-unified-video', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    },
+
+    /**
+     * Live Webcam Frame Analysis
+     * @param {Object} payload - { frame: string (base64) }
+     */
+    analyzeLiveFrame: async (payload) => {
+        const response = await client.post('/api/scan/live-unified', payload);
+        return response.data;
+    }
+};

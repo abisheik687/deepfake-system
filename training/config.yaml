@@ -1,0 +1,52 @@
+"""
+DeepShield AI — Training config defaults
+Copy and modify this file to override hyperparameters.
+"""
+
+# Model configuration
+model:
+  name: efficientnet_b4       # efficientnet_b4 | xception | vit_b16 | mesonet4
+  pretrained: true             # start from ImageNet weights
+  num_classes: 2               # 0=real, 1=fake
+  dropout: 0.5
+  freeze_epochs: 5             # freeze backbone for first N epochs (transfer learning)
+
+# Dataset
+data:
+  dir: ./data/datasets
+  datasets:                    # list datasets to merge
+    - ff++
+    - celeb_df
+  image_size: 224
+  augment: true
+  val_split: 0.15
+  max_per_dataset: null        # null = use all
+
+# Training
+training:
+  epochs: 20
+  batch_size: 16
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  label_smoothing: 0.1
+  amp: true                    # mixed precision (GPU only)
+  patience: 5                  # early stopping patience
+  gradient_clip: 1.0
+  seed: 42
+
+# Optimizer & Scheduler
+optimizer:
+  type: adamw                  # adamw | sgd | adam
+  scheduler: cosine            # cosine | step | plateau
+
+# Output
+output:
+  dir: ./models
+  save_onnx: true              # export ONNX after training
+  tensorboard: true
+
+# Inference thresholds
+inference:
+  fake_threshold: 0.50
+  min_face_size: 80
+  model_blend_weight: 0.80     # DNN vs frequency analysis blend

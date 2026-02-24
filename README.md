@@ -3,8 +3,8 @@
 
 <img src="assets/kavach_ai_banner.png" alt="KAVACH-AI — Multimodal Deepfake Detection & Forensic Analysis" width="100%" />
 
-# 🛡️ KAVACH-AI
-### Multimodal Deepfake Detection & Forensic Analysis Platform
+# 🛡️ DeepShield AI (formerly KAVACH-AI)
+### Unified Multimodal Deepfake Detection & Threat Intelligence Platform
 
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com/abisheik687/deepfake-system)
 [![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)](https://semver.org)
@@ -22,14 +22,14 @@
 
 ## 📖 Overview
 
-**KAVACH-AI** *(Protection AI — कवच)* is an enterprise-grade forensic intelligence platform engineered to detect and analyze AI-generated synthetic media (deepfakes). Powered by a sophisticated **Multi-Modal Fusion Engine**, the system simultaneously interrogates video streams for spatial artifacts, audio tracks for spectral inconsistencies, and temporal sequences for unnatural motion patterns — producing a single, high-confidence forensic verdict.
+**DeepShield AI** (formerly KAVACH-AI) is a production-ready, highly-scalable threat intelligence platform engineered to detect and analyze AI-generated synthetic media (deepfakes). The system is entirely driven by a **Central Model Orchestrator**—a single authoritative pipeline that fuses multiple state-of-the-art vision and frequency models via temperature-scaled soft voting to produce a deterministic, high-confidence Deepfake Risk Score (0-100).
 
-Built for **law enforcement agencies**, **digital forensic laboratories**, and **media integrity units**, KAVACH-AI provides:
+Built for **trust and safety teams**, **digital forensic laboratories**, and **media integrity units**, DeepShield AI provides:
 
-- 🔬 **High-Confidence Verdicts** — By triangulating data from visual, audio, and temporal AI models through weighted ensemble fusion.
-- ⛓️ **Chain of Custody** — Blockchain-ready cryptographic hashing and immutable audit logs for court-admissible evidence.
-- 📡 **Real-Time Surveillance** — RTSP stream ingestion for live CCTV and broadcast threat detection.
-- 📄 **Automated PDF Reporting** — Forensic-grade reports with timestamps, confidence scores, and evidence hashes.
+- 🔬 **High-Confidence Verdicts** — Triangulates data from ViT, EfficientNet, and Frequency models through weighted ensemble fusion.
+- 🚀 **Unified Orchestration** — A single, highly optimized endpoint (`/api/scan`) handles static images, full videos, and real-time live webcams.
+- ⚡ **Real-Time Live Enforcement** — Optimized <100ms pipeline utilizing fast frequency models to protect live webcam feeds.
+- 🧩 **Scalable Architecture** — Built with FastAPI, Celery, and Redis for concurrent model execution and intelligent caching.
 
 ---
 
@@ -37,57 +37,70 @@ Built for **law enforcement agencies**, **digital forensic laboratories**, and *
 
 | Feature | Description |
 | :--- | :--- |
-| **🎥 Multi-Modal Detection** | Simultaneous analysis of *MesoNet* (Video), *Mel-Spectrogram* (Audio), and *LSTM* (Temporal) models. |
-| **🧠 AI Fusion Engine** | Weighted voting ensemble that significantly reduces false positives vs. single-model approaches. |
-| **📊 Forensic Dashboard** | Interactive visualization of confidence scores, frame-by-frame anomalies, and modality heatmaps. |
-| **⚡ Real-Time Monitor** | Live CCTV interface with bounding-box inference and scrolling threat alert logs. |
-| **🔒 JWT Authentication** | Role-based access control (RBAC) with secure token-based authentication for labs and analysts. |
-| **📂 Report Generation** | Automated PDF export with full forensic details, timestamps, and evidence integrity hashes. |
+| **🧠 Central Orchestrator** | A single authoritative pipeline managing concurrent model execution, caching, and health registries. |
+| **🎥 Video Orchestration** | Temporal frame aggregation analyzes video streams across multiple models to find fleeting anomalies. |
+| **🖼️ Image Analysis** | High-fidelity static image analysis using a balanced tier of ViT and Frequency models to detect sub-pixel manipulation. |
+| **⚡ Live Enforcement** | Sub-100ms low-latency camera scanning using optimized frequency models. |
+| **📊 Command Center** | Interactive visualization of global metrics, live detections, and threat severity. |
+| **📈 Deterministic Scoring** | Results are normalized via temperature scaling and fused using weighted soft-voting to produce a uniform Risk Score. |
 | **🐳 Dockerized Microservices** | Fully containerized architecture for reproducible, "one-click" deployment in any environment. |
-| **📡 RTSP Stream Support** | Live stream ingestion for real-time deepfake detection in video surveillance pipelines. |
 
 ---
 
 ## 🏗️ System Architecture
 
-KAVACH-AI follows a modular, event-driven microservices architecture to ensure scalability, resilience, and maintainability.
+DeepShield AI follows a clean, orchestration-driven architecture ensuring a single source of truth for all deepfake analysis.
 
 ```mermaid
 graph TD
-    subgraph "Client Layer"
-        User[Forensic Analyst]
-        Browser[React 18 Frontend]
+    %% Frontend Clients
+    Client_Web[Web App: Image/Video/Live]
+    Client_Ext[Browser Extension]
+    Client_API[External API Clients]
+
+    %% Consolidated API Layer
+    subgraph FastAPI_Backend [DeepShield FastAPI Backend]
+        Router[Router: /api/scan]
+        
+        %% Central Orchestrator
+        subgraph Orchestrator [Central Model Orchestrator]
+            Cache[(Redis Cache)]
+            Runner[Task Runner / Concurrency]
+            Registry[Model Registry & Health]
+            Ensemble[Ensemble Aggregator]
+            Temp[Temperature Scaler]
+        end
+        
+        %% Model Tier execution
+        subgraph Models [Model Execution]
+            Models_Freq[Fast Frequency: DCT, FFT]
+            Models_ViT[Vision Transformers: ViT]
+            Models_CNN[CNN: EfficientNet]
+        end
     end
 
-    subgraph "Application Layer"
-        API[FastAPI Gateway :8000]
-        Auth[JWT Auth Service]
-        Worker[Celery AI Worker]
-    end
+    %% Diagram Flow
+    Client_Web --> |Upload/Frame/URL| Router
+    Client_Ext --> |Image URL/b64| Router
+    Client_API --> |REST Request| Router
 
-    subgraph "Data Layer"
-        DB[(PostgreSQL :5432)]
-        Redis[Redis Cache & Queue :6379]
-        Storage[Evidence File Storage]
-    end
-
-    subgraph "AI Core Engine"
-        Video[MesoNet — Video Model]
-        Audio[Mel-Spec — Audio Model]
-        Temporal[LSTM — Temporal Model]
-        Fusion[Weighted Fusion Engine]
-    end
-
-    User -->|HTTPS| Browser
-    Browser -->|REST API| API
-    API -->|Verify| Auth
-    API -->|Store Metadata| DB
-    API -->|Enqueue Task| Redis
-    Redis -->|Process Async| Worker
-    Worker -->|Inference| Video & Audio & Temporal
-    Video & Audio & Temporal -->|Results| Fusion
-    Fusion -->|Final Verdict| DB
-    DB -->|Report| Browser
+    Router --> |Analyze Request| Orchestrator
+    
+    Orchestrator --> |Check hit| Cache
+    Orchestrator --> |Dispatch| Runner
+    Runner <--> |Status/Availability| Registry
+    
+    Runner --> |Execute| Models_Freq
+    Runner --> |Execute| Models_ViT
+    Runner --> |Execute| Models_CNN
+    
+    Models_Freq --> Temp
+    Models_ViT --> Temp
+    Models_CNN --> Temp
+    
+    Temp --> |Calibrated Probs| Ensemble
+    Ensemble --> |Deterministic Final Score| Router
+    Router --> |Standardised JSON| Client_Web
 ```
 
 ---
@@ -95,25 +108,25 @@ graph TD
 ## 📂 Project Structure
 
 ```bash
-kavach-ai/
+deepshield-ai/
 ├── assets/                  # Project branding & media assets
 │   └── kavach_ai_banner.png # Project logo & banner
 ├── backend/                 # Python/FastAPI Backend Service
-│   ├── api/                 # REST API Routes & Controllers
-│   │   ├── auth.py          # JWT Authentication endpoints
-│   │   ├── scan.py          # File upload & analysis endpoints
-│   │   └── reports.py       # Forensic report generation
-│   ├── core/                # Configuration & Security utilities
-│   ├── database/            # SQLAlchemy ORM Models & CRUD operations
-│   ├── models/              # PyTorch AI Models (MesoNet, LSTM)
-│   ├── worker.py            # Celery Async Task Definitions
+│   ├── api/                 # REST API Routes
+│   │   ├── scan.py          # Unified Scanner (orchestrator entry point) 
+│   │   └── models_api.py    # Model configuration & registry API
+│   ├── orchestrator/        # Central Orchestrator Core
+│   │   ├── orchestrator.py  # Main pipeline manager
+│   │   ├── task_runner.py   # Concurrent model execution
+│   │   ├── ensemble_aggregator.py # Weighted soft voting 
+│   │   └── temperature_scaler.py  # Probabilistic calibration
 │   └── main.py              # FastAPI Application Entrypoint
 ├── frontend/                # React 18 / Vite Frontend
 │   ├── src/
 │   │   ├── api/             # Axios API Client & interceptors
 │   │   ├── components/      # Reusable UI Components
-│   │   ├── layout/          # Dashboard shell & navigation layouts
-│   │   ├── pages/           # Feature Views (Analysis, Monitor, Upload)
+│   │   ├── layout/          # Dashboard shell & navigation
+│   │   ├── pages/           # Feature Views (HomePage, Dashboard, Scanners)
 │   │   └── context/         # Global State Management (Auth Context)
 │   └── Dockerfile           # Multi-stage Nginx production build
 ├── scripts/                 # Utility & setup scripts
@@ -228,10 +241,9 @@ The API is fully documented using **OpenAPI (Swagger UI)** at `http://localhost:
 ### Scan & Analysis
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/scan/upload` | Upload video or audio evidence (supports chunked upload) |
-| `GET` | `/scan/{id}` | Retrieve analysis results and confidence scores |
-| `GET` | `/scan/history` | List all past scans for the current authenticated user |
-| `DELETE` | `/scan/{id}` | Delete a scan record and its associated evidence |
+| `POST` | `/api/scan/analyze-unified` | High-fidelity static image orchestrator pass |
+| `POST` | `/api/scan/analyze-unified-video` | Temporal video frame aggregation |
+| `POST` | `/api/scan/live-unified` | Sub-100ms ultra-low latency webcam scanning |
 
 ### Reports
 | Method | Endpoint | Description |
@@ -246,10 +258,10 @@ KAVACH-AI employs a three-stage AI pipeline for comprehensive media analysis:
 
 | Model | Modality | Architecture | Purpose |
 |---|---|---|---|
-| **MesoNet** | Video / Image | CNN | Detects facial manipulation artifacts in individual frames |
-| **Mel-Spectrogram** | Audio | CNN + SpecAugment | Identifies GAN-synthesized voice patterns and spectral anomalies |
-| **LSTM Temporal** | Temporal | Bi-LSTM | Catches inconsistent blinking, gaze, and micro-expression sequences |
-| **Fusion Engine** | All | Weighted Ensemble | Combines all model outputs into a final weighted confidence verdict |
+| **Frequency Models** | Live / Image | DCT, FFT | Catches sub-pixel anomalies and synthetic noise patterns. Optimized for <100ms live stream scanning. |
+| **Vision Transformers** | Video / Image | ViT | High-fidelity spatial artifact detection across varying resolutions. |
+| **EfficientNet** | Video / Image | CNN | Efficient spatial bounding and artifact detection. |
+| **Fusion Engine** | All | Probabilistic Soft Voting | Combines model calibrations through temperature scaling into a final robust Risk Score limit (0-100). |
 
 ---
 

@@ -13,9 +13,10 @@ import sys
 
 from backend.config import settings
 from backend.database import init_db, engine
-from backend.api import streams, detections, alerts, upload
+from backend.api import alerts
 from backend.api.auth import auth_router
-from backend.api import analyze_url, explain
+from backend.api import scan            # Phase ORCH — Unified Orchestration Scanner
+from backend.api import models_api      # Models and training info
 from backend.detection.pipeline import analyze_frame
 
 
@@ -111,12 +112,11 @@ app.add_middleware(
 # ============================================
 
 app.include_router(auth_router)
-app.include_router(streams.router, prefix="/api/streams", tags=["Streams"])
-app.include_router(detections.router, prefix="/api/detections", tags=["Detections"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
-app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
-app.include_router(analyze_url.router, prefix="/api/analyze-url", tags=["Extension"])
-app.include_router(explain.router, prefix="/api/explain", tags=["Extension"])
+# ── DeepShield AI — Config and Models ───────────────────────────────────────
+app.include_router(models_api.router,       prefix="/api/models",    tags=["Models"])
+# ── DeepShield AI — Consolidated Scanner (Orchestration Layer) ──────────────
+app.include_router(scan.router,             prefix="/api/scan",      tags=["Scanner"])
 
 
 
