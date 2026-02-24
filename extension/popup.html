@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KAVACH.AI Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #00f3ff, #0066ff);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .header-title { font-size: 15px; font-weight: 700; color: #fff; }
+    .header-sub   { font-size: 10px; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* Status bar */
+    .status-bar {
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .status-dot.green  { background: #22c55e; box-shadow: 0 0 6px #22c55e80; }
+    .status-dot.red    { background: #ef4444; }
+    .status-dot.yellow { background: #eab308; }
+
+    /* Toggle */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toggle {
+      position: relative;
+      width: 36px; height: 20px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #334155;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    input:checked + .slider { background: #00f3ff; }
+    input:checked + .slider::before { transform: translateX(16px); }
+
+    /* Body sections */
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    /* Inputs */
+    .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .input-group:last-child { margin-bottom: 0; }
+    label { font-size: 12px; color: #94a3b8; }
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus { border-color: #00f3ff; }
+    select option { background: #1e293b; }
+
+    /* Hint */
+    .hint {
+      font-size: 10px;
+      color: #475569;
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+    .hint a { color: #00f3ff; text-decoration: none; }
+
+    /* Save button */
+    .btn-save {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #00f3ff, #0066ff);
+      color: #000;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      letter-spacing: 0.3px;
+    }
+    .btn-save:hover  { opacity: 0.9; }
+    .btn-save:active { transform: scale(0.98); }
+
+    .saved-msg {
+      text-align: center;
+      font-size: 11px;
+      color: #22c55e;
+      margin-top: 6px;
+      height: 16px;
+      transition: opacity 0.3s;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+    .stat-num  { font-size: 18px; font-weight: 800; color: #fff; }
+    .stat-lbl  { font-size: 9px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .stat-num.red   { color: #f87171; }
+    .stat-num.green { color: #4ade80; }
+
+    /* Footer */
+    .footer {
+      padding: 10px 16px;
+      font-size: 10px;
+      color: #1e293b;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">🛡️</div>
+    <div>
+      <div class="header-title">KAVACH.AI</div>
+      <div class="header-sub">Deepfake Shield</div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div>
+      <span class="status-dot" id="backend-dot"></span>
+      <span id="backend-status">Checking backend…</span>
+    </div>
+    <div class="toggle-wrap">
+      <span style="font-size:11px; color:#64748b;">Scan</span>
+      <label class="toggle">
+        <input type="checkbox" id="enabled-toggle" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section">
+    <div class="section-label">Session Stats</div>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-scanned">—</div>
+        <div class="stat-lbl">Scanned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num red" id="stat-fake">—</div>
+        <div class="stat-lbl">Fake</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num green" id="stat-real">—</div>
+        <div class="stat-lbl">Real</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Settings -->
+  <div class="section">
+    <div class="section-label">AI Explanation Settings</div>
+
+    <div class="input-group">
+      <label for="api-provider">AI Provider</label>
+      <select id="api-provider">
+        <option value="gemini">Google Gemini (recommended — free tier + live web search)</option>
+        <option value="openai">OpenAI (GPT-4o-mini)</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label for="api-key">API Key</label>
+      <input type="password" id="api-key" placeholder="Paste your API key here…" autocomplete="off" />
+      <div class="hint" id="api-hint">
+        Get a free Gemini key at
+        <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+      </div>
+    </div>
+
+    <button class="btn-save" id="save-btn">Save Settings</button>
+    <div class="saved-msg" id="saved-msg"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">KAVACH.AI v1.0 • Backend: localhost:8000</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

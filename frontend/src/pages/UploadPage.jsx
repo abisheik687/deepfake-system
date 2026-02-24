@@ -84,9 +84,9 @@ const UploadPage = () => {
                                         <CheckCircle2 size={40} />
                                     </motion.div>
                                     <h3 className="text-2xl font-bold text-white mb-2">Upload Successful</h3>
-                                    <p className="text-gray-400 mb-8">Evidence ID: {result.fileId.slice(0, 8)}...</p>
+                                    <p className="text-gray-400 mb-8">Evidence ID: #{result.detectionId}</p>
                                     <button
-                                        onClick={() => window.location.href = `/analysis/${result.fileId}`}
+                                        onClick={() => window.location.href = `/analysis/${result.detectionId}`}
                                         className="px-6 py-2 bg-neon-blue text-black font-bold rounded-lg hover:bg-white transition-colors"
                                     >
                                         View Full Analysis

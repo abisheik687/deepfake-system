@@ -2,24 +2,23 @@
 import { useState, useEffect } from 'react';
 import { FileText, Download, Search, Filter, Eye, ChevronRight, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import client from '../api/client';
+import { detectionsAPI } from '../services/api';
 
 const ReportsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const response = await client.get('/scan/history');
-                const formattedReports = response.data.map(r => ({
-                    id: r.task_id,
-                    date: new Date(r.created_at).toLocaleString(),
-                    filename: r.filename,
-                    verdict: r.verdict || 'PENDING',
-                    confidence: r.final_score ? (r.final_score * 100).toFixed(1) : 0,
-                    officer: 'You' // Since endpoint filters by current user
+                const response = await detectionsAPI.getHistory({ limit: 100 });
+                const formattedReports = response.map(r => ({
+                    id: r.id.toString(),
+                    date: new Date(r.timestamp).toLocaleString(),
+                    filename: r.metadata_json?.filename || `StreamScan_${r.id}`,
+                    verdict: r.severity === 'high' || r.confidence > 0.85 ? 'FAKE' : 'REAL',
+                    confidence: r.confidence ? (r.confidence * 100).toFixed(1) : 0,
+                    officer: 'System'
                 }));
                 setReports(formattedReports);
             } catch (err) {

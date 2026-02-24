@@ -82,23 +82,6 @@ async def query_detections(
         )
 
 
-@router.get("/{detection_id}", response_model=DetectionResponse)
-async def get_detection(
-    detection_id: int,
-    db: Session = Depends(get_db)
-):
-    """Get detailed information about a specific detection"""
-    detection = db.query(Detection).filter(Detection.id == detection_id).first()
-    
-    if not detection:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Detection {detection_id} not found"
-        )
-    
-    return detection
-
-
 @router.get("/stats/summary", response_model=DetectionStatistics)
 async def get_detection_statistics(
     stream_id: Optional[int] = None,
@@ -189,3 +172,23 @@ async def get_detection_statistics(
             status_code=500,
             detail=f"Error calculating statistics: {str(e)}"
         )
+
+
+@router.get("/{detection_id}", response_model=DetectionResponse)
+async def get_detection(
+    detection_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get detailed information about a specific detection"""
+    detection = db.query(Detection).filter(Detection.id == detection_id).first()
+    
+    if not detection:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Detection {detection_id} not found"
+        )
+    
+    return detection
+
+
+

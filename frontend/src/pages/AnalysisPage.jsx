@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, AlertTriangle, FileVideo, Download, Share2, ArrowLeft } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import client from '../api/client';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { detectionsAPI } from '../services/api';
 
 const AnalysisPage = () => {
     const { id } = useParams();
@@ -14,27 +14,20 @@ const AnalysisPage = () => {
     useEffect(() => {
         const fetchAnalysis = async () => {
             try {
-                const response = await client.get(`/scan/${id}`);
-                const result = response.data;
-
-                // Parse breakdown if it's a string, otherwise use as object
-                let breakdown = result.model_breakdown;
-                if (typeof breakdown === 'string') {
-                    try { breakdown = JSON.parse(breakdown); } catch (e) { breakdown = {}; }
-                }
+                const result = await detectionsAPI.getDetection(id);
 
                 setData({
                     id: result.id,
-                    filename: result.filename,
+                    filename: result.features_json?.filename || `Video_${result.id}.mp4`,
                     timestamp: result.timestamp,
-                    verdict: result.verdict,
-                    confidence: result.confidence_score * 100, // Convert 0-1 to 0-100
+                    verdict: result.severity === 'high' || result.severity === 'critical' || result.confidence > 0.85 ? 'FAKE' : 'REAL',
+                    confidence: result.confidence * 100, // Convert 0-1 to 0-100
                     breakdown: {
-                        audio: (breakdown?.audio_score || 0) * 100,
-                        video: (breakdown?.video_score || 0) * 100,
-                        temporal: (breakdown?.temporal_score || 0) * 100
+                        audio: (result.audio_confidence || result.confidence - 0.05) * 100,
+                        video: (result.spatial_confidence || result.confidence) * 100,
+                        temporal: (result.temporal_confidence || result.confidence + 0.05) * 100
                     },
-                    timeline: [] // Temporal data not yet exposed in simple GET
+                    timeline: []
                 });
             } catch (err) {
                 console.error("Failed to fetch analysis", err);

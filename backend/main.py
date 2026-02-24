@@ -13,8 +13,10 @@ import sys
 
 from backend.config import settings
 from backend.database import init_db, engine
-from backend.api import streams, detections, alerts
+from backend.api import streams, detections, alerts, upload
 from backend.api.auth import auth_router
+from backend.api import analyze_url, explain
+from backend.detection.pipeline import analyze_frame
 
 
 
@@ -92,11 +94,13 @@ app = FastAPI(
 # MIDDLEWARE
 # ============================================
 
-# CORS
+# CORS — allow all origins so Chrome extension content scripts can reach the backend
+# IMPORTANT: allow_credentials MUST be False when allow_origins=["*"] (CORS spec)
+# The frontend uses JWT in Authorization header (not cookies), so this is safe.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -110,6 +114,9 @@ app.include_router(auth_router)
 app.include_router(streams.router, prefix="/api/streams", tags=["Streams"])
 app.include_router(detections.router, prefix="/api/detections", tags=["Detections"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
+app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
+app.include_router(analyze_url.router, prefix="/api/analyze-url", tags=["Extension"])
+app.include_router(explain.router, prefix="/api/explain", tags=["Extension"])
 
 
 
@@ -207,6 +214,23 @@ async def websocket_endpoint(websocket: WebSocket):
                     "type": "pong",
                     "timestamp": "2026-02-01T12:12:01+05:30"
                 }, websocket)
+            
+            elif message_type == "frame":
+                # Real-time camera frame analysis
+                frame_data = data.get("data", "")
+                if frame_data:
+                    result = analyze_frame(frame_data)
+                    is_alert = result["verdict"] == "FAKE"
+                    await manager.send_personal_message({
+                        "type": "frame_result",
+                        "verdict": result["verdict"],
+                        "confidence": result["confidence"],
+                        "faces": result["faces"],
+                        "message": result["message"],
+                        "data": {
+                            "severity": "high" if is_alert else "low",
+                        }
+                    }, websocket)
             
             elif message_type == "subscribe":
                 # Subscribe to specific streams or alert types
