@@ -3,9 +3,7 @@ import client from '../api/client';
 export const authAPI = {
     /**
      * Authenticate user & get JWT token
-     * @param {string} username 
-     * @param {string} password 
-     * @returns {Promise<{access_token: string, token_type: string}>}
+     * POST /auth/token  (OAuth2 form-encoded)
      */
     login: async (username, password) => {
         const params = new URLSearchParams();
@@ -20,8 +18,8 @@ export const authAPI = {
 
 export const detectionsAPI = {
     /**
-     * Get aggregate statistics for detections
-     * @returns {Promise<{total_detections: number, total_alerts: number, severity_distribution: any, average_confidence: number}>}
+     * GET /api/detections/stats/summary
+     * Returns: { total_detections, total_fakes, total_alerts, average_confidence }
      */
     getStats: async () => {
         const response = await client.get('/api/detections/stats/summary');
@@ -29,9 +27,8 @@ export const detectionsAPI = {
     },
 
     /**
-     * Get paginated history of detections
-     * @param {Object} params - Query parameters (limit, offset)
-     * @returns {Promise<Array<any>>}
+     * GET /api/detections/?limit=N&offset=N
+     * Returns paginated scan history array
      */
     getHistory: async (params = { limit: 100, offset: 0 }) => {
         const response = await client.get('/api/detections/', { params });
@@ -39,9 +36,8 @@ export const detectionsAPI = {
     },
 
     /**
-     * Get detailed information for a single detection
-     * @param {number} id 
-     * @returns {Promise<any>}
+     * GET /api/detections/:id
+     * Returns full detail for a single scan
      */
     getDetection: async (id) => {
         const response = await client.get(`/api/detections/${id}`);
@@ -51,21 +47,22 @@ export const detectionsAPI = {
 
 export const streamsAPI = {
     /**
-     * Get active and/or inactive streams
-     * @param {boolean} active_only 
-     * @returns {Promise<Array<any>>}
+     * GET /api/streams/ — graceful fallback if not yet implemented
      */
-    getStreams: async (active_only = true) => {
-        const response = await client.get('/api/streams/', { params: { active_only } });
-        return response.data;
+    getStreams: async (_active_only = true) => {
+        try {
+            const response = await client.get('/api/streams/');
+            return response.data;
+        } catch {
+            // Streams endpoint not yet implemented — return empty array silently
+            return [];
+        }
     }
 };
 
 export const alertsAPI = {
     /**
-     * Get alerts
-     * @param {Object} params - Query parameters
-     * @returns {Promise<Array<any>>}
+     * GET /api/alerts/?limit=N&offset=N
      */
     getAlerts: async (params = { limit: 50, offset: 0 }) => {
         const response = await client.get('/api/alerts/', { params });
@@ -75,8 +72,8 @@ export const alertsAPI = {
 
 export const unifiedAPI = {
     /**
-     * Unified Deepfake Image Analysis
-     * @param {Object} payload - { data: string (base64 image), source: string }
+     * POST /api/scan/analyze-unified
+     * Body: { data: base64, source, tier, ... }
      */
     analyzeImage: async (payload) => {
         const response = await client.post('/api/scan/analyze-unified', payload);
@@ -84,8 +81,8 @@ export const unifiedAPI = {
     },
 
     /**
-     * Unified Deepfake Video Analysis
-     * @param {FormData} formData - form data containing video file
+     * POST /api/scan/analyze-unified-video
+     * Body: FormData (file, tier, sample_fps, max_frames)
      */
     analyzeVideo: async (formData) => {
         const response = await client.post('/api/scan/analyze-unified-video', formData, {
@@ -95,8 +92,8 @@ export const unifiedAPI = {
     },
 
     /**
-     * Live Webcam Frame Analysis
-     * @param {Object} payload - { frame: string (base64) }
+     * POST /api/scan/live-unified
+     * Body: { frame: base64 }
      */
     analyzeLiveFrame: async (payload) => {
         const response = await client.post('/api/scan/live-unified', payload);

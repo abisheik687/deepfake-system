@@ -220,8 +220,41 @@ class AuditLog(Base):
 # ============================================
 
 def init_db():
-    """Initialize database tables"""
+    """Initialize database tables and seed demo data"""
     Base.metadata.create_all(bind=engine)
+    seed_demo_user()
+
+
+def seed_demo_user():
+    """
+    Seed a demo user on first run if no users exist.
+    Credentials: demo@kavach.ai / kavach2026
+    """
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
+    db = SessionLocal()
+    try:
+        existing = db.query(User).filter(User.email == "demo@kavach.ai").first()
+        if not existing:
+            demo_user = User(
+                email="demo@kavach.ai",
+                hashed_password=pwd_context.hash("kavach2026"),
+                full_name="Demo Officer",
+                role="admin",
+                is_active=True,
+            )
+            db.add(demo_user)
+            db.commit()
+            from loguru import logger
+            logger.success("✓ Demo user seeded: demo@kavach.ai / kavach2026")
+    except Exception as e:
+        db.rollback()
+        from loguru import logger
+        logger.warning(f"Could not seed demo user: {e}")
+    finally:
+        db.close()
+
 
 
 def get_db():

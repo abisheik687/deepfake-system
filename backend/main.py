@@ -8,8 +8,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from datetime import datetime
 from loguru import logger
 import sys
+
 
 from backend.config import settings
 from backend.database import init_db, engine
@@ -17,7 +19,9 @@ from backend.api import alerts
 from backend.api.auth import auth_router
 from backend.api import scan            # Phase ORCH — Unified Orchestration Scanner
 from backend.api import models_api      # Models and training info
+from backend.api import detections      # Detection history & stats
 from backend.detection.pipeline import analyze_frame
+
 
 
 
@@ -112,11 +116,13 @@ app.add_middleware(
 # ============================================
 
 app.include_router(auth_router)
-app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
-# ── DeepShield AI — Config and Models ───────────────────────────────────────
-app.include_router(models_api.router,       prefix="/api/models",    tags=["Models"])
-# ── DeepShield AI — Consolidated Scanner (Orchestration Layer) ──────────────
-app.include_router(scan.router,             prefix="/api/scan",      tags=["Scanner"])
+app.include_router(alerts.router,      prefix="/api/alerts",      tags=["Alerts"])
+# ── DeepShield AI — Config and Models ────────────────────────────────────────
+app.include_router(models_api.router,  prefix="/api/models",      tags=["Models"])
+# ── DeepShield AI — Detection History & Stats ────────────────────────────────
+app.include_router(detections.router,  prefix="/api/detections",  tags=["Detections"])
+# ── DeepShield AI — Consolidated Scanner (Orchestration Layer) ───────────────
+app.include_router(scan.router,        prefix="/api/scan",        tags=["Scanner"])
 
 
 
@@ -199,8 +205,9 @@ async def websocket_endpoint(websocket: WebSocket):
         await manager.send_personal_message({
             "type": "connection",
             "message": f"Connected to {settings.APP_NAME}",
-            "timestamp": "2026-02-01T12:12:01+05:30"
+            "timestamp": datetime.utcnow().isoformat()
         }, websocket)
+
         
         while True:
             # Receive messages from client (heartbeat, commands, etc.)
@@ -212,8 +219,9 @@ async def websocket_endpoint(websocket: WebSocket):
             if message_type == "ping":
                 await manager.send_personal_message({
                     "type": "pong",
-                    "timestamp": "2026-02-01T12:12:01+05:30"
+                    "timestamp": datetime.utcnow().isoformat()
                 }, websocket)
+
             
             elif message_type == "frame":
                 # Real-time camera frame analysis

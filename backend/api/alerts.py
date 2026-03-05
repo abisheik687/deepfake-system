@@ -169,7 +169,7 @@ async def get_alert_evidence(
 @router.get("/{alert_id}/evidence/export")
 async def export_alert_evidence(
     alert_id: int,
-    export_format: str = Query("json", regex="^(json|cef|stix|pdf)$"),
+    export_format: str = Query("json", pattern="^(json|cef|stix|pdf)$"),
     db: Session = Depends(get_db)
 ):
     """
