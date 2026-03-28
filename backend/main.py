@@ -1,318 +1,81 @@
 """
-KAVACH-AI FastAPI Application Entry Point
-Real-Time Deepfake Detection and Threat Intelligence System
-NO API KEYS REQUIRED - All processing is local
+Internal trace:
+- Wrong before: mixed legacy/live routes, duplicate health handlers, undefined logger imports, SPA serving in the API process, and on-demand model loading promises that were never implemented.
+- Fixed now: single FastAPI runtime for upload analysis, lifespan-based model loading, consistent error envelopes, explicit CORS, and only the supported health/analyse routes.
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-from datetime import datetime
-from loguru import logger
-import sys
+
+from config import settings
+from models.loader import model_lifespan
+from routers.analyse import router as analyse_router
+from routers.health import router as health_router
+from utils.file_utils import AppError
+from utils.logger import get_logger
 
 
-from backend.config import settings
-from backend.database import init_db, engine
-from backend.api import alerts
-from backend.api.auth import auth_router
-from backend.api import scan            # Phase ORCH — Unified Orchestration Scanner
-from backend.api import models_api      # Models and training info
-from backend.api import detections      # Detection history & stats
-from backend.detection.pipeline import analyze_frame
-from backend.api.rate_limit import limiter
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
+logger = get_logger(__name__)
 
-
-
-
-# ============================================
-# LOGGING SETUP
-# ============================================
-
-logger.remove()  # Remove default handler
-logger.add(
-    sys.stderr,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
-    level=settings.LOG_LEVEL
-)
-logger.add(
-    str(settings.LOG_FILE),
-    rotation=settings.LOG_ROTATION,
-    retention=settings.LOG_RETENTION,
-    level=settings.LOG_LEVEL
-)
-
-
-# ============================================
-# LIFESPAN CONTEXT MANAGER
-# ============================================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for startup and shutdown events
-    """
-    # Startup
-    logger.info(f"🛡️  Starting {settings.APP_NAME} v{settings.APP_VERSION}")
-    logger.info(f"Environment: {settings.ENVIRONMENT}")
-    logger.info(f"Database: {settings.DATABASE_URL}")
-    
-    # Initialize database
-    logger.info("Initializing database...")
-    await init_db()
-    logger.success("✓ Database initialized")
-    
-    # Create directories
-    settings.MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    settings.EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
-    logger.success("✓ Directories created")
-    
-    # TODO: Load ML models
-    logger.info("ML models will be loaded on-demand")
-    
-    logger.success(f"✓ {settings.APP_NAME} started successfully!")
-    logger.info(f"API Documentation: http://{settings.HOST}:{settings.PORT}/docs")
-    
-    yield
-    
-    # Shutdown
-    logger.info(f"Shutting down {settings.APP_NAME}...")
-    # Cleanup tasks here
-    logger.success("✓ Shutdown complete")
+    async with model_lifespan(app):
+        logger.info('application_started', extra={'app_name': settings.app_name})
+        yield
+        logger.info('application_stopped', extra={'app_name': settings.app_name})
 
 
-# ============================================
-# FASTAPI APPLICATION
-# ============================================
-
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description="Real-Time Deepfake Detection and Threat Intelligence System",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    lifespan=lifespan
-)
-
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-
-# ============================================
-# MIDDLEWARE
-# ============================================
-
-from fastapi.middleware.cors import CORSMiddleware
-from backend.config import settings
-
-def _parse_origins(raw: str) -> list[str]:
-    """
-    Parse a comma-separated ALLOWED_ORIGINS string into a clean list.
-    """
-    return [o.strip() for o in raw.split(",") if o.strip()]
-
-allowed_origins = _parse_origins(settings.ALLOWED_ORIGINS)
+app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "X-Request-ID",
-        "Accept",
-    ],
-    expose_headers=[
-        "Content-Disposition",
-        "X-Evidence-Alert-ID",
-        "X-Export-Timestamp",
-    ],
+    allow_methods=['GET', 'POST', 'OPTIONS'],
+    allow_headers=['*'],
 )
 
-
-# ============================================
-# INCLUDE ROUTERS
-# ============================================
-
-from backend.api.health import health_router
-
-app.include_router(auth_router)
 app.include_router(health_router)
-app.include_router(alerts.router,      prefix="/api/alerts",      tags=["Alerts"])
-# ── DeepShield AI — Config and Models ────────────────────────────────────────
-app.include_router(models_api.router,  prefix="/api/models",      tags=["Models"])
-# ── DeepShield AI — Detection History & Stats ────────────────────────────────
-app.include_router(detections.router,  prefix="/api/detections",  tags=["Detections"])
-# ── DeepShield AI — Consolidated Scanner (Orchestration Layer) ───────────────
-app.include_router(scan.router,        prefix="/api/scan",        tags=["Scanner"])
+app.include_router(analyse_router)
 
 
-
-# ============================================
-# ROOT ENDPOINTS
-# ============================================
-
-@app.get("/")
-async def root():
-    """Root endpoint with API information"""
-    return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "description": "Real-Time Deepfake Detection and Threat Intelligence System",
-        "status": "operational",
-        "docs": "/docs",
-        "health": "/health"
-    }
+@app.exception_handler(AppError)
+async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
+    return JSONResponse(status_code=exc.status_code, content={'error': exc.message, 'code': exc.code})
 
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for monitoring"""
-    return {
-        "status": "healthy",
-        "app": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
-    }
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+    first = exc.errors()[0] if exc.errors() else {}
+    location = '.'.join(str(part) for part in first.get('loc', []) if part != 'body')
+    message = first.get('msg', 'Invalid request')
+    if location:
+        message = f'{location}: {message}'
+    return JSONResponse(status_code=422, content={'error': message, 'code': 'INVALID_REQUEST'})
 
-
-# ============================================
-# WEBSOCKET ENDPOINT
-# ============================================
-
-class ConnectionManager:
-    """Manage WebSocket connections"""
-    
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
-    
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        logger.info(f"WebSocket connected. Total connections: {len(self.active_connections)}")
-    
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-        logger.info(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
-    
-    async def send_personal_message(self, message: dict, websocket: WebSocket):
-        await websocket.send_json(message)
-    
-    async def broadcast(self, message: dict):
-        """Broadcast message to all connected clients"""
-        for connection in self.active_connections:
-            try:
-                await connection.send_json(message)
-            except Exception as e:
-                logger.error(f"Error broadcasting to client: {e}")
-
-
-manager = ConnectionManager()
-
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for real-time updates
-    
-    Clients receive:
-    - Detection updates
-    - Alert notifications
-    - System status updates
-    """
-    await manager.connect(websocket)
-    
-    try:
-        # Send welcome message
-        await manager.send_personal_message({
-            "type": "connection",
-            "message": f"Connected to {settings.APP_NAME}",
-            "timestamp": datetime.utcnow().isoformat()
-        }, websocket)
-
-        
-        while True:
-            # Receive messages from client (heartbeat, commands, etc.)
-            data = await websocket.receive_json()
-            
-            # Handle different message types
-            message_type = data.get("type")
-            
-            if message_type == "ping":
-                await manager.send_personal_message({
-                    "type": "pong",
-                    "timestamp": datetime.utcnow().isoformat()
-                }, websocket)
-
-            
-            elif message_type == "frame":
-                # Real-time camera frame analysis
-                frame_data = data.get("data", "")
-                if frame_data:
-                    result = analyze_frame(frame_data)
-                    is_alert = result["verdict"] == "FAKE"
-                    await manager.send_personal_message({
-                        "type": "frame_result",
-                        "verdict": result["verdict"],
-                        "confidence": result["confidence"],
-                        "faces": result["faces"],
-                        "message": result["message"],
-                        "data": {
-                            "severity": "high" if is_alert else "low",
-                        }
-                    }, websocket)
-            
-            elif message_type == "subscribe":
-                # Subscribe to specific streams or alert types
-                logger.info(f"Client subscribed: {data}")
-                await manager.send_personal_message({
-                    "type": "subscription_confirmed",
-                    "data": data
-                }, websocket)
-            
-            else:
-                logger.warning(f"Unknown WebSocket message type: {message_type}")
-    
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        manager.disconnect(websocket)
-
-
-# ============================================
-# ERROR HANDLERS
-# ============================================
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    """Global exception handler"""
-    logger.error(f"Global error: {exc}")
+async def unhandled_error_handler(_: Request, exc: Exception) -> JSONResponse:
+    logger.exception('unhandled_exception', extra={'error': str(exc)})
     return JSONResponse(
         status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": str(exc) if settings.DEBUG else "An error occurred"
-        }
+        content={'error': 'Analysis failed - try again', 'code': 'INTERNAL_ERROR'},
     )
 
 
-# ============================================
-# STARTUP MESSAGE
-# ============================================
+@app.get('/')
+async def root() -> dict[str, str]:
+    return {'name': settings.app_name, 'version': settings.app_version, 'docs': '/docs'}
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     import uvicorn
-    
-    uvicorn.run(
-        "backend.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        log_level=settings.LOG_LEVEL.lower()
-    )
+
+    uvicorn.run('main:app', host=settings.host, port=settings.port, reload=True)

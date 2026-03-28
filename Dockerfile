@@ -1,52 +1,27 @@
-# Multi-stage build for KAVACH-AI Backend
-# Stage 1: Base image with system dependencies
-FROM python:3.10-slim as base
+# Internal trace:
+# - Wrong before: the root Dockerfile reflected the old backend layout and copied scripts that are no longer part of the active runtime.
+# - Fixed now: this root image acts as a compatibility backend build using the cleaned backend service only.
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    libglib2.0-0 \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.11-slim
 
-# Set working directory
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r /app/requirements.txt
 
-# Stage 2: Application
-FROM base as app
+COPY backend/ /app/backend/
 
-# Copy application code
-COPY backend/ ./backend/
-COPY scripts/ ./scripts/
+WORKDIR /app/backend
 
-# Create necessary directories and set up non-root user
-RUN addgroup --system kavach && adduser --system --group kavach && \
-    mkdir -p /app/models /app/data /app/evidence /app/logs && \
-    chown -R kavach:kavach /app
-
-USER kavach
-
-# Download pre-trained models (if script exists)
-# RUN python scripts/download_models.py || echo "Model download skipped"
-
-# Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Default command
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

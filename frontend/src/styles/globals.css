@@ -1,36 +1,324 @@
-@import './tokens.css';
+/**
+ * Internal trace:
+ * - Wrong before: the active UI styling was functional but visually narrow, with limited depth, weaker hierarchy, and not enough responsive polish for a premium web-first experience.
+ * - Fixed now: the global design system adds richer typography, layered atmosphere, reusable surface styles, stronger CTA treatment, and mobile-to-desktop responsive behavior for the upload-first application.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;800&family=Space+Grotesk:wght@400;500;700&display=swap');
 @import 'tailwindcss';
 
-body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
+:root {
+  --bg-base: #030711;
+  --bg-surface: #09111d;
+  --bg-surface-2: #0f1725;
+  --bg-card: rgba(12, 20, 34, 0.82);
+  --accent-cyan: #62f4ff;
+  --accent-blue: #3aa6ff;
+  --accent-red: #ff5c7a;
+  --accent-orange: #ff9f52;
+  --accent-green: #3df6a3;
+  --text-primary: #eef6ff;
+  --text-secondary: #90a6ba;
+  --text-muted: #6d8092;
+  --border: rgba(98, 244, 255, 0.14);
+  --border-strong: rgba(98, 244, 255, 0.3);
+  --shadow-panel: 0 30px 80px rgba(0, 0, 0, 0.42);
+  --shadow-glow: 0 0 28px rgba(98, 244, 255, 0.14);
+  --noise-dot: rgba(255, 255, 255, 0.02);
 }
 
-/* Scrollbar */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', sans-serif;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(98, 244, 255, 0.18), transparent 20%),
+    radial-gradient(circle at 88% 16%, rgba(58, 166, 255, 0.2), transparent 24%),
+    radial-gradient(circle at 78% 72%, rgba(255, 92, 122, 0.14), transparent 18%),
+    linear-gradient(160deg, #02050b 0%, #07111d 38%, #030812 100%);
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  background-image:
+    linear-gradient(var(--noise-dot) 1px, transparent 1px),
+    linear-gradient(90deg, var(--noise-dot) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black 42%, transparent 88%);
+}
+
+body::after {
+  background:
+    radial-gradient(circle at center, rgba(98, 244, 255, 0.08), transparent 34%),
+    radial-gradient(circle at center, rgba(255, 159, 82, 0.04), transparent 52%);
+  mix-blend-mode: screen;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img,
+video,
+audio,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.scan-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.scan-shell::before {
+  content: '';
+  position: absolute;
+  inset: auto -10% -10rem auto;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(98, 244, 255, 0.14), transparent 68%);
+  filter: blur(12px);
+  opacity: 0.9;
+  z-index: -1;
+}
+
+.scan-shell::after {
+  content: '';
+  position: absolute;
+  inset: 6rem auto auto -8rem;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(58, 166, 255, 0.16), transparent 68%);
+  filter: blur(14px);
+  z-index: -1;
+}
+
+.panel {
+  background:
+    linear-gradient(180deg, rgba(18, 27, 45, 0.94), rgba(7, 12, 22, 0.96)),
+    rgba(8, 11, 17, 0.78);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+}
+
+.signal-card {
+  background:
+    linear-gradient(180deg, rgba(12, 20, 34, 0.92), rgba(7, 12, 22, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-glow);
+}
+
+.heading-font {
+  font-family: 'Orbitron', sans-serif;
+}
+
+.label-font {
+  font-family: 'Inter', sans-serif;
+}
+
+.data-font {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.hero-chip {
+  border: 1px solid rgba(98, 244, 255, 0.22);
+  background: linear-gradient(180deg, rgba(98, 244, 255, 0.16), rgba(58, 166, 255, 0.08));
+  box-shadow: 0 0 18px rgba(98, 244, 255, 0.12);
+}
+
+.action-primary {
+  border: 1px solid rgba(98, 244, 255, 0.2);
+  background: linear-gradient(135deg, #79f8ff 0%, #36afff 100%);
+  color: #03101d;
+  box-shadow: 0 18px 30px rgba(54, 175, 255, 0.2);
+}
+
+.action-primary:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 20px 36px rgba(54, 175, 255, 0.3);
+}
+
+.action-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+}
+
+.action-secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.metric-tile {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+}
+
+.inline-error {
+  border: 1px solid rgba(255, 92, 122, 0.3);
+  background: linear-gradient(180deg, rgba(255, 92, 122, 0.14), rgba(255, 92, 122, 0.06));
+  color: #ffd6de;
+}
+
+.scanline {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(98, 244, 255, 0.1) 44%, rgba(98, 244, 255, 0.2) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+.drop-burst {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.drop-burst span {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(98, 244, 255, 0.85);
+  box-shadow: 0 0 14px rgba(98, 244, 255, 0.55);
+  animation: burst 0.8s ease-out forwards;
+}
+
+.drop-burst span:nth-child(1) { top: 28%; left: 24%; }
+.drop-burst span:nth-child(2) { top: 34%; left: 68%; }
+.drop-burst span:nth-child(3) { top: 54%; left: 18%; }
+.drop-burst span:nth-child(4) { top: 56%; left: 74%; }
+.drop-burst span:nth-child(5) { top: 42%; left: 48%; }
+
+@keyframes burst {
+  from {
+    transform: scale(0.25);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-32px) scale(1.45);
+    opacity: 0;
+  }
+}
+
+.soft-grid {
+  position: relative;
+}
+
+.soft-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgba(98, 244, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(98, 244, 255, 0.04) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(180deg, black, transparent 92%);
+  pointer-events: none;
+}
+
+.orbital-ring {
+  position: relative;
+}
+
+.orbital-ring::after {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border: 1px dashed rgba(98, 244, 255, 0.16);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.section-kicker {
+  color: var(--accent-cyan);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.media-badge {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.status-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 16px rgba(98, 244, 255, 0.8);
+}
+
+.audio-bars {
+  display: flex;
+  align-items: end;
+  gap: 0.25rem;
+}
+
+.audio-bars > span {
+  flex: 1;
+  border-radius: 999px;
+}
+
+::selection {
+  background: rgba(98, 244, 255, 0.25);
+}
+
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  width: 9px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--bg-card-hover);
-    border-radius: 3px;
+  background: linear-gradient(180deg, rgba(98, 244, 255, 0.35), rgba(58, 166, 255, 0.35));
+  border-radius: 999px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: var(--cyan-dim);
-}
+@media (max-width: 768px) {
+  body::before {
+    background-size: 48px 48px;
+  }
 
-/* Focus ring */
-*:focus-visible {
-    outline: 2px solid var(--cyan);
-    outline-offset: 2px;
+  .scan-shell::before,
+  .scan-shell::after {
+    opacity: 0.75;
+  }
 }

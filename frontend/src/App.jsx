@@ -1,44 +1,27 @@
+/**
+ * Internal trace:
+ * - Wrong before: the app routed through protected dashboards, live feeds, webcam tools, and other incomplete surfaces that distracted from the core detection flow.
+ * - Fixed now: routing is limited to home, analyse, and results, all driven by one shared analysis hook.
+ */
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import MainLayout from './layout/MainLayout';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
-import ScanPage from './pages/ScanPage';
-import AlertsPage from './pages/AlertsPage';
-import ResultsPage from './pages/ResultsPage';
-import LiveStreamPage from './pages/LiveStreamPage';
-
-const ProtectedRoute = ({ children }) => {
-  const { token } = useAuth();
-  if (!token) return <Navigate to="/login" replace />;
-  return children;
-};
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import Home from './pages/Home.jsx';
+import Analyse from './pages/Analyse.jsx';
+import Results from './pages/Results.jsx';
+import { useAnalysis } from './hooks/useAnalysis.js';
 
 function App() {
+  const analysis = useAnalysis();
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          }>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="scan" element={<ScanPage />} />
-            <Route path="alerts" element={<AlertsPage />} />
-            <Route path="alerts/:alertId" element={<ResultsPage />} />
-            <Route path="live" element={<LiveStreamPage />} />
-            {/* Catch-all explicitly wrapped so it sits inside layout */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/analyse" element={<Analyse analysis={analysis} />} />
+        <Route path="/results" element={<Results analysis={analysis} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

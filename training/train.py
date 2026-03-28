@@ -38,6 +38,7 @@ from sklearn.metrics import (roc_auc_score, f1_score,
                               precision_score, recall_score,
                               classification_report)
 import yaml
+import mlflow
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from training.dataset import build_dataloaders
@@ -263,14 +264,21 @@ def train(cfg_path: str, model_key: str, overrides: dict) -> Path:
             name=cfg['model_name'],
             config=cfg,
         )
+        
+    # MLflow Setup
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"))
+    mlflow.set_experiment(cfg.get("mlflow_experiment", "kavach-ai-training"))
+    
+    with mlflow.start_run(run_name=cfg['model_name']) as run:
+        mlflow.log_params(cfg)
 
-    # Data
-    loaders = build_dataloaders(
-        cfg['manifest_path'],
-        batch_size=cfg.get('batch_size', 32),
-        num_workers=cfg.get('num_workers', 4),
-        balanced_sampling=True,
-    )
+        # Data
+        loaders = build_dataloaders(
+            cfg['manifest_path'],
+            batch_size=cfg.get('batch_size', 32),
+            num_workers=cfg.get('num_workers', 4),
+            balanced_sampling=True,
+        )
 
     # Model
     model = load_model(cfg, num_classes=cfg.get('num_classes', 2), device=device)
@@ -350,6 +358,10 @@ def train(cfg_path: str, model_key: str, overrides: dict) -> Path:
                 **{f'val_{k}':   v for k,v in val_metrics.items()},
                 'epoch': epoch,
             })
+            
+        # MLflow metrics logging
+        mlflow.log_metrics({f'train_{k}': v for k,v in train_metrics.items()}, step=epoch)
+        mlflow.log_metrics({f'val_{k}': v for k,v in val_metrics.items()}, step=epoch)
 
         # Save best checkpoint
         val_auc = val_metrics['auc']
@@ -394,18 +406,26 @@ def train(cfg_path: str, model_key: str, overrides: dict) -> Path:
         json.dump({'test': test_metrics, 'best_val_auc': best_auc,
                    'model': cfg['model_name']}, f, indent=2)
 
-    # ── ONNX export ──────────────────────────────────────────────────
-    onnx_path = ckpt_dir / f'{cfg["model_name"]}.onnx'
-    export_onnx(model, cfg, onnx_path, device)
+        # ── ONNX export ──────────────────────────────────────────────────
+        onnx_path = ckpt_dir / f'{cfg["model_name"]}.onnx'
+        export_onnx(model, cfg, onnx_path, device)
+        
+        # Log artifacts to MLflow
+        if best_ckpt and best_ckpt.exists():
+            mlflow.log_artifact(str(best_ckpt), artifact_path="checkpoints")
+        if onnx_path.exists():
+            mlflow.log_artifact(str(onnx_path), artifact_path="onnx_models")
+        if results_path.exists():
+            mlflow.log_artifact(str(results_path), artifact_path="results")
 
-    if wandb_run:
-        wandb_run.log({f'test_{k}': v for k, v in test_metrics.items()})
-        wandb_run.finish()
+        if wandb_run:
+            wandb_run.log({f'test_{k}': v for k, v in test_metrics.items()})
+            wandb_run.finish()
 
-    log.info(f'Training complete. Best val AUC: {best_auc:.4f}')
-    log.info(f'Checkpoint: {best_ckpt}')
-    log.info(f'ONNX model: {onnx_path}')
-    return best_ckpt
+        log.info(f'Training complete. Best val AUC: {best_auc:.4f}')
+        log.info(f'Checkpoint: {best_ckpt}')
+        log.info(f'ONNX model: {onnx_path}')
+        return best_ckpt
 
 
 # ── ONNX export ────────────────────────────────────────────────────

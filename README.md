@@ -1,301 +1,264 @@
+<!--
+Internal trace:
+- Wrong before: the README was accurate but sparse, with limited project understanding, no visual flow, and no polished onboarding path for a fresh user.
+- Fixed now: the README is a professional landing page with banner imagery, architecture/workflow diagrams, project explanation, and the fresh-system one-command localhost bootstrap.
+-->
 
-<div align="center">
+# KAVACH-AI
 
-<img src="assets/kavach_ai_banner.png" alt="KAVACH-AI — Multimodal Deepfake Detection & Forensic Analysis" width="100%" />
+<p align="center">
+  <strong>DeepShield AI for upload-first deepfake detection</strong><br />
+  A responsive web application for analysing image, video, and audio authenticity with a FastAPI backend and a modern React frontend.
+</p>
 
-# 🛡️ DeepShield AI (formerly KAVACH-AI)
-### Unified Multimodal Deepfake Detection & Threat Intelligence Platform
+<p align="center">
+  <img src="./docs/assets/banner.png" alt="KAVACH-AI banner" width="100%" />
+</p>
 
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com/abisheik687/deepfake-system)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)](https://semver.org)
-[![Python](https://img.shields.io/badge/Python-3.9%2B-yellow?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-
-[🚀 Request Demo](https://kavach-ai.demo) · [🐛 Report Bug](https://github.com/abisheik687/deepfake-system/issues) · [✨ Request Feature](https://github.com/abisheik687/deepfake-system/issues)
-
-</div>
-
----
-
-## 📖 Overview
-
-**DeepShield AI** (formerly KAVACH-AI) is a production-ready, highly-scalable threat intelligence platform engineered to detect and analyze AI-generated synthetic media (deepfakes). The system is entirely driven by a **Central Model Orchestrator**—a single authoritative pipeline that fuses multiple state-of-the-art vision and frequency models via temperature-scaled soft voting to produce a deterministic, high-confidence Deepfake Risk Score (0-100).
-
-Built for **trust and safety teams**, **digital forensic laboratories**, and **media integrity units**, DeepShield AI provides:
-
-- 🔬 **High-Confidence Verdicts** — Triangulates data from ViT, EfficientNet, and Frequency models through weighted ensemble fusion.
-- 🚀 **Unified Orchestration** — A single, highly optimized endpoint (`/api/scan`) handles static images, full videos, and real-time live webcams.
-- ⚡ **Real-Time Live Enforcement** — Optimized <100ms pipeline utilizing fast frequency models to protect live webcam feeds.
-- 🧩 **Scalable Architecture** — Built with FastAPI, Celery, and Redis for concurrent model execution and intelligent caching.
+<p align="center">
+  <img src="https://img.shields.io/badge/Backend-FastAPI-0ea5e9?style=for-the-badge" alt="FastAPI badge" />
+  <img src="https://img.shields.io/badge/Frontend-React%20%2B%20Vite-38bdf8?style=for-the-badge" alt="React badge" />
+  <img src="https://img.shields.io/badge/UI-Framer%20Motion%20%2B%20Tailwind-67e8f9?style=for-the-badge" alt="UI badge" />
+  <img src="https://img.shields.io/badge/Focus-Upload%20Workflow-22c55e?style=for-the-badge" alt="Workflow badge" />
+</p>
 
 ---
 
-## ⚡ Key Features
+## Project Understanding
 
-| Feature | Description |
-| :--- | :--- |
-| **🧠 Central Orchestrator** | A single authoritative pipeline managing concurrent model execution, caching, and health registries. |
-| **🎥 Video Orchestration** | Temporal frame aggregation analyzes video streams across multiple models to find fleeting anomalies. |
-| **🖼️ Image Analysis** | High-fidelity static image analysis using a balanced tier of ViT and Frequency models to detect sub-pixel manipulation. |
-| **⚡ Live Enforcement** | Sub-100ms low-latency camera scanning using optimized frequency models. |
-| **📊 Command Center** | Interactive visualization of global metrics, live detections, and threat severity. |
-| **📈 Deterministic Scoring** | Results are normalized via temperature scaling and fused using weighted soft-voting to produce a uniform Risk Score. |
-| **🐳 Dockerized Microservices** | Fully containerized architecture for reproducible, "one-click" deployment in any environment. |
+KAVACH-AI is a **web-first deepfake detection platform** built around one reliable user journey: **upload, analyse, review, repeat**.
+
+The repository was cleaned and reorganized so the active application is easy to understand:
+
+- `backend/` contains the FastAPI service, validation, model loading, and image/audio/video pipelines.
+- `frontend/` contains the responsive React application for upload, progress tracking, and result review.
+- `legacy/` contains archived experiments and older realtime/dashboard code that is no longer part of the running product.
+
+### What the active application does
+
+- Accepts **image**, **video**, and **audio** uploads.
+- Validates file type and file size before analysis.
+- Runs a weighted deepfake scoring pipeline.
+- Returns a readable result with verdict, confidence, model breakdown, warnings, waveform data, and sampled video frames when available.
+- Works as a **fully web application**. The Chrome extension path has been removed.
 
 ---
 
-## 🏗️ System Architecture
-
-DeepShield AI follows a clean, orchestration-driven architecture ensuring a single source of truth for all deepfake analysis.
+## Architecture Diagram
 
 ```mermaid
-graph TD
-    %% Frontend Clients
-    Client_Web[Web App: Image/Video/Live]
-    Client_Ext[Browser Extension]
-    Client_API[External API Clients]
-
-    %% Consolidated API Layer
-    subgraph FastAPI_Backend [DeepShield FastAPI Backend]
-        Router[Router: /api/scan]
-        
-        %% Central Orchestrator
-        subgraph Orchestrator [Central Model Orchestrator]
-            Cache[(Redis Cache)]
-            Runner[Task Runner / Concurrency]
-            Registry[Model Registry & Health]
-            Ensemble[Ensemble Aggregator]
-            Temp[Temperature Scaler]
-        end
-        
-        %% Model Tier execution
-        subgraph Models [Model Execution]
-            Models_Freq[Fast Frequency: DCT, FFT]
-            Models_ViT[Vision Transformers: ViT]
-            Models_CNN[CNN: EfficientNet]
-        end
+flowchart TB
+    subgraph Clients["Client Tier"]
+        Web["React Web App\nVite + Framer Motion + responsive UI"]
+        Mobile["Mobile / Tablet Browser\nSame web experience"]
     end
 
-    %% Diagram Flow
-    Client_Web --> |Upload/Frame/URL| Router
-    Client_Ext --> |Image URL/b64| Router
-    Client_API --> |REST Request| Router
+    subgraph Backend["FastAPI Service"]
+        Main["main.py\nCORS, lifespan, error handling"]
+        Health["routers/health.py"]
+        Analyse["routers/analyse.py"]
+        Schemas["schemas/request.py + response.py"]
+    end
 
-    Router --> |Analyze Request| Orchestrator
-    
-    Orchestrator --> |Check hit| Cache
-    Orchestrator --> |Dispatch| Runner
-    Runner <--> |Status/Availability| Registry
-    
-    Runner --> |Execute| Models_Freq
-    Runner --> |Execute| Models_ViT
-    Runner --> |Execute| Models_CNN
-    
-    Models_Freq --> Temp
-    Models_ViT --> Temp
-    Models_CNN --> Temp
-    
-    Temp --> |Calibrated Probs| Ensemble
-    Ensemble --> |Deterministic Final Score| Router
-    Router --> |Standardised JSON| Client_Web
+    subgraph Detection["Detection Core"]
+        Loader["models/loader.py\nstartup model registry"]
+        Ensemble["models/ensemble.py\nweighted voting"]
+        ImagePipe["pipelines/image_pipeline.py"]
+        VideoPipe["pipelines/video_pipeline.py"]
+        AudioPipe["pipelines/audio_pipeline.py"]
+    end
+
+    subgraph Support["Support Modules"]
+        Config["config.py"]
+        Files["utils/file_utils.py"]
+        Logger["utils/logger.py"]
+    end
+
+    Web --> Main
+    Mobile --> Main
+    Main --> Health
+    Main --> Analyse
+    Analyse --> Schemas
+    Analyse --> ImagePipe
+    Analyse --> VideoPipe
+    Analyse --> AudioPipe
+    ImagePipe --> Loader
+    VideoPipe --> Loader
+    AudioPipe --> Loader
+    Loader --> Ensemble
+    Main --> Config
+    Analyse --> Files
+    Main --> Logger
 ```
 
 ---
 
-## 📂 Project Structure
+## Workflow Diagram
 
-```bash
-deepshield-ai/
-├── assets/                  # Project branding & media assets
-│   └── kavach_ai_banner.png # Project logo & banner
-├── backend/                 # Python/FastAPI Backend Service
-│   ├── api/                 # REST API Routes
-│   │   ├── scan.py          # Unified Scanner (orchestrator entry point) 
-│   │   └── models_api.py    # Model configuration & registry API
-│   ├── orchestrator/        # Central Orchestrator Core
-│   │   ├── orchestrator.py  # Main pipeline manager
-│   │   ├── task_runner.py   # Concurrent model execution
-│   │   ├── ensemble_aggregator.py # Weighted soft voting 
-│   │   └── temperature_scaler.py  # Probabilistic calibration
-│   └── main.py              # FastAPI Application Entrypoint
-├── frontend/                # React 18 / Vite Frontend
-│   ├── src/
-│   │   ├── api/             # Axios API Client & interceptors
-│   │   ├── components/      # Reusable UI Components
-│   │   ├── layout/          # Dashboard shell & navigation
-│   │   ├── pages/           # Feature Views (HomePage, Dashboard, Scanners)
-│   │   └── context/         # Global State Management (Auth Context)
-│   └── Dockerfile           # Multi-stage Nginx production build
-├── scripts/                 # Utility & setup scripts
-├── tests/                   # Automated test suites
-├── data/                    # Storage for uploads, DB files & evidence
-├── docker-compose.yml       # Full-stack service orchestration
-├── requirements.txt         # Python dependency manifest
-├── setup.sh                 # Linux/macOS setup script
-├── setup.bat                # Windows setup script
-└── README.md                # Project documentation
+```mermaid
+flowchart LR
+    A["User opens web app"] --> B["Upload media\nimage / video / audio"]
+    B --> C["Client validation\nsize + format + preview"]
+    C --> D["POST /analyse"]
+    D --> E["Server validation\nmime + size + temp file handling"]
+    E --> F{"Media type"}
+    F -->|Image| G["Image pipeline"]
+    F -->|Video| H["Video pipeline\nframe sampling + optional audio extraction"]
+    F -->|Audio| I["Audio pipeline"]
+    G --> J["Weighted scoring"]
+    H --> J
+    I --> J
+    J --> K["Verdict + confidence + warnings"]
+    K --> L["Results page\nmodel scores, waveform, frame grid"]
+    L --> M["Analyse another"]
 ```
 
 ---
 
-## 🚀 Getting Started
+## Active Repository Layout
 
-### Prerequisites
-
-- **Docker** (v24+) & **Docker Compose** (v2+)
-- *Or* **Python** 3.9+ & **Node.js** 18+ *(for manual setup)*
-- Minimum **8GB RAM** recommended for running AI inference models
+```text
+.
++-- backend/
+�   +-- main.py
+�   +-- config.py
+�   +-- routers/
+�   +-- models/
+�   +-- pipelines/
+�   +-- schemas/
+�   +-- utils/
+�   +-- requirements.txt
+�   +-- Dockerfile
++-- frontend/
+�   +-- src/
+�   �   +-- api/
+�   �   +-- components/
+�   �   +-- hooks/
+�   �   +-- pages/
+�   �   +-- styles/
+�   +-- package.json
+�   +-- Dockerfile
++-- docs/
+�   +-- API.md
+�   +-- INSTALL.md
+�   +-- CODEBASE_DIAGRAM.md
+�   +-- assets/banner.png
++-- legacy/
+�   +-- backend/
+�   +-- frontend/
+�   +-- root-docs/
+�   +-- scripts/
++-- docker-compose.yml
+```
 
 ---
 
-### 🐳 Option A: Docker Deployment *(Recommended)*
+## Tech Stack
 
-The fastest way to get KAVACH-AI running with all services.
+### Backend
 
-**1. Clone the Repository**
-```bash
-git clone https://github.com/abisheik687/deepfake-system.git
-cd deepfake-system
-```
+- FastAPI
+- Pydantic Settings
+- Transformers
+- Torch / Torchvision / timm
+- OpenCV
+- librosa / soundfile / scipy
 
-**2. Configure Environment**
-```bash
-cp .env.example .env
-# Edit .env to set your SECRET_KEY, database credentials, etc.
-```
+### Frontend
 
-**3. Launch All Services**
-```bash
-docker-compose up --build -d
-```
+- React
+- Vite
+- Framer Motion
+- Tailwind CSS
+- Axios
+- Lucide Icons
 
-**4. Access the Platform**
+### Runtime Strategy
 
-| Service | URL |
-|---|---|
-| 🌐 Frontend Dashboard | [http://localhost:3000](http://localhost:3000) |
-| ⚙️ API Documentation | [http://localhost:8000/docs](http://localhost:8000/docs) |
-| 🔑 Default Login | `admin` / `admin` |
+- Primary startup path: **Docker Compose**
+- Fallback path: **Python venv + npm**
+- Environment bootstrapping via `.env.example` files
 
 ---
 
-### 🔧 Option B: Manual Installation
+## Fresh-System One-Command Bootstrap (Windows PowerShell)
 
-<details>
-<summary>Click to expand manual setup instructions</summary>
+This is the optimized one-command bootstrap for a **fresh Windows system**. It installs missing tools, clones the repository if needed, creates env files, starts the active stack, waits for readiness, and opens the app on localhost.
 
-#### 1. Backend (FastAPI + Python)
+```powershell
+$repo = if (Test-Path '.git') { (Get-Location).Path } else { Join-Path $HOME 'kavach-ai' }; if (!(Get-Command git -ErrorAction SilentlyContinue) -and !(Test-Path "$Env:ProgramFiles\Git\cmd\git.exe")) { winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements }; $git = if (Get-Command git -ErrorAction SilentlyContinue) { (Get-Command git).Source } else { "$Env:ProgramFiles\Git\cmd\git.exe" }; if (!(Test-Path (Join-Path $repo '.git'))) { & $git clone https://github.com/abisheik687/kavach-ai.git $repo }; Set-Location $repo; if (Test-Path '.env.example' -and !(Test-Path '.env')) { Copy-Item '.env.example' '.env' }; if (Test-Path 'backend\.env.example' -and !(Test-Path 'backend\.env')) { Copy-Item 'backend\.env.example' 'backend\.env' }; if (Test-Path 'frontend\.env.example' -and !(Test-Path 'frontend\.env')) { Copy-Item 'frontend\.env.example' 'frontend\.env' }; if (Test-Path 'docker-compose.yml') { if (!(Test-Path "$Env:ProgramFiles\Docker\Docker\Docker Desktop.exe")) { winget install --id Docker.DockerDesktop -e --accept-package-agreements --accept-source-agreements }; if (-not (Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue)) { Start-Process "$Env:ProgramFiles\Docker\Docker\Docker Desktop.exe" }; $docker = "$Env:ProgramFiles\Docker\Docker\resources\bin\docker.exe"; do { Start-Sleep 5 } until (Test-Path $docker); do { Start-Sleep 5; try { & $docker info *> $null; $ready = $LASTEXITCODE -eq 0 } catch { $ready = $false } } until ($ready); & $docker compose up --build -d; do { Start-Sleep 5; try { $api = (Invoke-WebRequest 'http://localhost:8000/health' -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200; $web = (Invoke-WebRequest 'http://localhost:4173' -UseBasicParsing -TimeoutSec 5).StatusCode -ge 200 } catch { $api = $false; $web = $false } } until ($api -and $web); Start-Process 'http://localhost:4173' } else { if (!(Get-Command py -ErrorAction SilentlyContinue)) { winget install --id Python.Python.3.11 -e --accept-package-agreements --accept-source-agreements }; if (!(Test-Path "$Env:ProgramFiles\nodejs\npm.cmd")) { winget install --id OpenJS.NodeJS.LTS -e --accept-package-agreements --accept-source-agreements }; py -3.11 -m venv .venv; .\.venv\Scripts\python.exe -m pip install --upgrade pip; .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt; & "$Env:ProgramFiles\nodejs\npm.cmd" ci --prefix frontend; Start-Process powershell -ArgumentList '-NoExit','-Command','Set-Location ''backend''; ..\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000'; Start-Process powershell -ArgumentList '-NoExit','-Command','Set-Location ''frontend''; npm run dev -- --host 0.0.0.0 --port 4173'; do { Start-Sleep 5; try { $api = (Invoke-WebRequest 'http://localhost:8000/health' -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200; $web = (Invoke-WebRequest 'http://localhost:4173' -UseBasicParsing -TimeoutSec 5).StatusCode -ge 200 } catch { $api = $false; $web = $false } } until ($api -and $web); Start-Process 'http://localhost:4173' }
+```
+
+### What the command does
+
+- Installs **Git** if needed and clones the repo when you are not already inside it.
+- Copies root, backend, and frontend `.env.example` files into working `.env` files.
+- Prefers **Docker Compose** for the fastest reliable full-stack startup on a fresh machine.
+- Falls back to **Python 3.11 + npm** if Docker is not available.
+- Waits until both backend and frontend are reachable, then opens the app at `http://localhost:4173`.
+
+---
+
+## Standard Local Start
+
+### Docker
+
 ```bash
+docker compose up --build
+```
+
+### Manual Development
+
+Backend:
+
+```powershell
 cd backend
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux / macOS
-source venv/bin/activate
-
-pip install -r ../requirements.txt
-uvicorn main:app --reload --port 8000
+..\.venv\Scripts\python.exe -m uvicorn main:app --reload
 ```
 
-#### 2. Frontend (React + Vite)
-```bash
+Frontend:
+
+```powershell
 cd frontend
-npm install
 npm run dev
 ```
 
-#### 3. Required Services
-Ensure the following services are running before starting:
+---
 
-| Service | Default Port | Purpose |
-|---|---|---|
-| PostgreSQL | 5432 | Primary relational database |
-| Redis | 6379 | Task queue & caching layer |
+## Localhost Endpoints
 
-#### 4. Database Initialization
-```bash
-# Run migrations
-alembic upgrade head
-
-# Create default admin user
-python scripts/create_admin.py
-```
-
-</details>
+- Web App: `http://localhost:4173`
+- Backend API: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
+- Health Check: `http://localhost:8000/health`
 
 ---
 
-## 📚 API Reference
+## Environment Files
 
-The API is fully documented using **OpenAPI (Swagger UI)** at `http://localhost:8000/docs`.
+The repository ships with these active templates:
 
-### Authentication
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/auth/token` | Authenticate and retrieve a JWT access token |
-| `POST` | `/auth/register` | Register a new analyst account |
+- Root: `.env.example`
+- Backend: `backend/.env.example`
+- Frontend: `frontend/.env.example`
 
-### Scan & Analysis
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/scan/analyze-unified` | High-fidelity static image orchestrator pass |
-| `POST` | `/api/scan/analyze-unified-video` | Temporal video frame aggregation |
-| `POST` | `/api/scan/live-unified` | Sub-100ms ultra-low latency webcam scanning |
-
-### Reports
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/reports/{scan_id}/pdf` | Download a forensic-grade PDF report for a scan |
+These defaults are already tuned for the active upload-first application.
 
 ---
 
-## 🧠 AI Models
+## Notes for Contributors
 
-KAVACH-AI employs a three-stage AI pipeline for comprehensive media analysis:
-
-| Model | Modality | Architecture | Purpose |
-|---|---|---|---|
-| **Frequency Models** | Live / Image | DCT, FFT | Catches sub-pixel anomalies and synthetic noise patterns. Optimized for <100ms live stream scanning. |
-| **Vision Transformers** | Video / Image | ViT | High-fidelity spatial artifact detection across varying resolutions. |
-| **EfficientNet** | Video / Image | CNN | Efficient spatial bounding and artifact detection. |
-| **Fusion Engine** | All | Probabilistic Soft Voting | Combines model calibrations through temperature scaling into a final robust Risk Score limit (0-100). |
+- The **Chrome extension has been removed** from the active product path.
+- The older realtime and experimental surfaces are preserved under `legacy/` for reference only.
+- If Hugging Face model downloads are unavailable, the backend still runs using deterministic fallback scorers instead of fake placeholder outputs.
+- Video audio extraction requires `ffmpeg`; the Docker backend image installs it automatically.
 
 ---
 
-## 🤝 Contributing
+## Documentation
 
-Contributions from the security research and AI community are welcome! Please review our [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
-
-1. 🍴 **Fork** the repository
-2. 🌿 **Create** your feature branch (`git checkout -b feature/YourFeatureName`)
-3. ✅ **Commit** your changes (`git commit -m 'feat: Add YourFeatureName'`)
-4. 📤 **Push** to the branch (`git push origin feature/YourFeatureName`)
-5. 🔁 **Open a Pull Request** with a clear description of your changes
-
----
-
-## 🛡️ Security
-
-If you discover a security vulnerability, please **do not open a public issue**. Instead, report it responsibly via the [GitHub Security Advisory](https://github.com/abisheik687/deepfake-system/security/advisories) feature.
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
-
----
-
-<div align="center">
-  <p>Built with ❤️ for digital truth and media integrity by the <strong>KAVACH-AI Team</strong></p>
-  <p>
-    <a href="#">Privacy Policy</a> ·
-    <a href="#">Terms of Service</a> ·
-    <a href="https://github.com/abisheik687/deepfake-system">GitHub Repository</a>
-  </p>
-  <br/>
-  <sub>⭐ If this project helps your research, please consider giving it a star!</sub>
-</div>
+- [Installation Guide](./docs/INSTALL.md)
+- [API Overview](./docs/API.md)
+- [Architecture Diagram](./docs/CODEBASE_DIAGRAM.md)
+- [Compliance Notes](./docs/COMPLIANCE.md)
+- [Legacy Archive Notes](./legacy/README.md)

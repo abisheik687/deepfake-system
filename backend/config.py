@@ -1,220 +1,58 @@
 """
-KAVACH-AI Backend Configuration
-Zero API Key Configuration - All Local Processing
+Internal trace:
+- Wrong before: duplicated CORS settings, unrelated legacy infrastructure knobs, and environment variables that did not reflect the actual runtime.
+- Fixed now: minimal pydantic-settings config for the upload pipeline, documented model slots, file limits, and predictable local defaults.
 """
 
-from pydantic_settings import BaseSettings
-from typing import Optional, List
-import os
+from __future__ import annotations
+
+import tempfile
 from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """
-    Application settings loaded from environment variables.
-    NO API KEYS REQUIRED - All processing is local.
-    """
-    
-    # ============================================
-    # APPLICATION
-    # ============================================
-    APP_NAME: str = "KAVACH-AI"
-    APP_VERSION: str = "1.0.0"
-    ENVIRONMENT: str = "development"
-    DEBUG: bool = True
-    
-    # ============================================
-    # SERVER
-    # ============================================
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    WORKERS: int = 4
+    app_name: str = 'KAVACH-AI'
+    app_version: str = '2.0.0'
+    environment: str = 'development'
+    host: str = '0.0.0.0'
+    port: int = 8000
+    log_level: str = 'INFO'
 
-    # Registration gate — set to 'true' only during initial setup
-    REGISTER_ENABLED: bool = False
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:4173',
+            'http://127.0.0.1:4173',
+        ]
+    )
 
-    # CORS — comma-separated list of allowed origins
-    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    model_cache_dir: Path = Path(tempfile.gettempdir()) / 'kavach-ai' / 'models'
+    temp_dir: Path = Path(tempfile.gettempdir()) / 'kavach-ai' / 'uploads'
+    max_image_audio_bytes: int = 20 * 1024 * 1024
+    max_video_bytes: int = 100 * 1024 * 1024
+    max_video_frames: int = 30
+    video_frame_stride: int = 10
+    analysis_timeout_seconds: int = 120
+    allow_fallback_models: bool = True
+    enable_remote_model_downloads: bool = False
+    default_image_threshold: float = 0.52
+    disagreement_threshold: float = 0.4
 
-    # Inference concurrency — 2 for CPU, 4 for GPU
-    MAX_CONCURRENT_MODELS: int = 2
+    model_vit_repo: str = 'prithivMLmods/Deep-Fake-Detector-Model'
+    model_efficientnet_repo: str = 'Wvolf/EfficientNet_Deepfake'
+    model_xception_repo: str = 'not-lain/xception-deepfake'
+    model_convnext_repo: str = 'facebook/convnext-base-224'
+    model_audio_repo: str = 'mo-thecreator/deepfake-audio-detector'
 
-    # Optional: local model checkpoint overrides for trained weights
-    KAVACH_MODEL_PRIMARY_PATH: Optional[str] = None
-    KAVACH_MODEL_SECONDARY_PATH: Optional[str] = None
-    KAVACH_MODEL_EFFICIENTNET_PATH: Optional[str] = None
-    KAVACH_MODEL_XCEPTION_PATH: Optional[str] = None
-    
-    # Auth Security
-    LOGIN_RATE_LIMIT: str = "5/minute"
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    
-    # ============================================
-    # DATABASE
-    # ============================================
-    DATABASE_URL: str = "postgresql+asyncpg://kavach:kavach@localhost:5432/kavach"
-    
-    # ============================================
-    # REDIS
-    # ============================================
-    REDIS_URL: str = "redis://localhost:6379/0"
-    
-    # ============================================
-    # MODEL PATHS (Local Models)
-    # ============================================
-    MODELS_DIR: Path = Path("./models")
-    SPATIAL_MODEL_PATH: Optional[str] = None
-    TEMPORAL_MODEL_PATH: Optional[str] = None
-    AUDIO_MODEL_PATH: Optional[str] = None
-    
-    # ============================================
-    # PROCESSING CONFIGURATION
-    # ============================================
-    # Video Settings
-    BASE_SAMPLING_INTERVAL: int = 2000  # ms
-    MAX_SAMPLING_INTERVAL: int = 4000
-    MIN_SAMPLING_INTERVAL: int = 500
-    TARGET_LATENCY_MS: int = 5000
-    FRAME_BUFFER_SIZE: int = 32
-    VIDEO_RESOLUTION: int = 384
-    
-    # Audio Settings
-    AUDIO_SAMPLE_RATE: int = 16000
-    AUDIO_SEGMENT_DURATION: int = 5  # seconds - Duration of each audio segment for processing
-    AUDIO_WINDOW_SECONDS: float = 4.0
-    AUDIO_OVERLAP_SECONDS: float = 2.0
-    MEL_BINS: int = 128
-    MFCC_COEFFICIENTS: int = 13
-    
-    # Ring Buffer
-    RING_BUFFER_SECONDS: int = 30
-    RING_BUFFER_DURATION: int = 30  # Alias for capture engine compatibility
-    
-    # ============================================
-    # DETECTION THRESHOLDS
-    # ============================================
-    DETECTION_CONFIDENCE_THRESHOLD: float = 0.6
-    ALERT_THRESHOLD: float = 0.7
-    HIGH_CONFIDENCE_THRESHOLD: float = 0.9
-    
-    # Temporal Accumulation
-    EMA_ALPHA: float = 0.3
-    TEMPORAL_HALFLIFE_SECONDS: int = 10
-    TEMPORAL_DECAY_RATE: float = 0.95
-    
-    # ============================================
-    # HARDWARE ACCELERATION
-    # ============================================
-    EXECUTION_PROVIDER: str = "cpu"
-    ENABLE_GPU: bool = False
-    CUDA_DEVICE_ID: int = 0
-    
-    # ============================================
-    # STREAM SOURCES
-    # ============================================
-    MAX_CONCURRENT_STREAMS: int = 5
-    ENABLE_YOUTUBE_LIVE: bool = True
-    ENABLE_RTSP_STREAMS: bool = True
-    ENABLE_AUDIO_STREAMS: bool = True
-    
-    # ============================================
-    # THREAT INTELLIGENCE
-    # ============================================
-    DEFAULT_SEVERITY: str = "medium"
-    CAMPAIGN_CORRELATION_THRESHOLD: float = 0.7
-    VIRAL_VELOCITY_THRESHOLD: int = 1000
-    SUSTAINED_HIGH_DURATION_SECONDS: int = 5
-    
-    # ============================================
-    # FORENSIC EVIDENCE
-    # ============================================
-    EVIDENCE_DIR: Path = Path("./evidence")
-    EVIDENCE_RETENTION_DAYS: int = 90
-    ENABLE_CRYPTOGRAPHIC_CHAIN: bool = True
-    EXPORT_FORMATS: List[str] = ["json", "cef", "pdf"]
-    
-    # ============================================
-    # ALERTS & NOTIFICATIONS
-    # ============================================
-    # WebSocket
-    ENABLE_WEBSOCKET: bool = True
-    WEBSOCKET_HEARTBEAT_SECONDS: int = 30
-    
-    # SIEM Integration (No auth for local)
-    ENABLE_SIEM: bool = False
-    SIEM_WEBHOOK_URL: Optional[str] = None
-    
-    # Email Alerts (Local SMTP - optional)
-    ENABLE_EMAIL_ALERTS: bool = False
-    SMTP_HOST: str = "localhost"
-    SMTP_PORT: int = 1025
-    SMTP_TLS: bool = False
-    ALERT_EMAIL_FROM: str = "kavach@localhost"
-    ALERT_EMAIL_TO: str = "security@localhost"
-    
-    # ============================================
-    # LOGGING
-    # ============================================
-    LOG_LEVEL: str = "INFO"
-    LOG_FILE: Path = Path("./logs/kavach.log")
-    LOG_ROTATION: str = "500 MB"
-    LOG_RETENTION: str = "10 days"
-    
-    # ============================================
-    # FRONTEND
-    # ============================================
-    FRONTEND_URL: str = "http://localhost:3000"
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "null",                    # Chrome extension service worker origin
-        "*",                       # Allow all — extension requests use varied origins
-    ]
+    ffmpeg_binary: str | None = None
 
-    
-    # ============================================
-    # CALIBRATION
-    # ============================================
-    PLATT_TEMPERATURE: float = 1.0
-    PLATT_BIAS: float = 0.0
-    TARGET_ECE: float = 0.05
-    
-    # ============================================
-    # ADAPTIVE RESOURCE MANAGEMENT
-    # ============================================
-    ENABLE_ADAPTIVE_SAMPLING: bool = True
-    ENABLE_FAST_PATH: bool = True
-    CPU_THRESHOLD_PERCENT: int = 80
-    MEMORY_THRESHOLD_PERCENT: int = 85
-    
-    # ============================================
-    # PRIVACY & ETHICS
-    # ============================================
-    ENFORCE_PRIVACY: bool = True  # Automatically blur faces in stored evidence
-    ENABLE_ETHICAL_WATERMARK: bool = True  # Add "AI PROCESSED" watermark
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        secrets_dir = "/run/secrets"
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Create directories if they don't exist
-        self.MODELS_DIR.mkdir(parents=True, exist_ok=True)
-        self.EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
-        self.LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Set default model paths if not provided
-        if not self.SPATIAL_MODEL_PATH:
-            self.SPATIAL_MODEL_PATH = str(self.MODELS_DIR / "efficientnet_b4_deepfake.onnx")
-        if not self.TEMPORAL_MODEL_PATH:
-            self.TEMPORAL_MODEL_PATH = str(self.MODELS_DIR / "lstm_temporal.onnx")
-        if not self.AUDIO_MODEL_PATH:
-            self.AUDIO_MODEL_PATH = str(self.MODELS_DIR / "audio_classifier.onnx")
+    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
 
-# Global settings instance
 settings = Settings()
+settings.model_cache_dir.mkdir(parents=True, exist_ok=True)
+settings.temp_dir.mkdir(parents=True, exist_ok=True)
